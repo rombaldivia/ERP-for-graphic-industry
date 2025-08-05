@@ -1,0 +1,247 @@
+function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.openById('1H5dl83yRZErMCHKaLQ_kzJNFJklsdweGdvgjkk0GoRI');
+    var sheet = ss.getSheetByName('Hoja1');
+    var data = JSON.parse(e.postData.contents);
+
+    Logger.log("Datos recibidos:", data);
+
+    // Validar 'section'
+    if (!data.section) {
+      return ContentService
+        .createTextOutput('Error: La sección no está especificada.')
+        .setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    // 1) Obtener o generar Nº de Proforma
+    var numeroProforma;
+    if (data.numeroProforma && data.numeroProforma !== "") {
+      numeroProforma = data.numeroProforma;
+    } else {
+      var lastProforma = getLastProformaNumber(sheet);
+      numeroProforma = (lastProforma + 1).toString().padStart(4, '0');
+    }
+
+    // ----------------------------
+    // AÑADIMOS LÓGICA targetRow
+    // ----------------------------
+    var targetRow;
+    if (data.targetRow) {
+      // Si en el JSON viene targetRow, lo usamos
+      targetRow = parseInt(data.targetRow, 10);
+    } else {
+      // Si no, buscamos si ya existe la proforma en la hoja
+      var existingRow = findRowByProforma(sheet, numeroProforma);
+      if (existingRow) {
+        targetRow = existingRow;
+      } else {
+        // Si no existe, usamos la primera fila vacía
+        targetRow = getNextAvailableRow(sheet);
+      }
+    }
+
+    switch (data.section) {
+      case 'Comercial':
+        handleComercial(sheet, targetRow, numeroProforma, data);
+        break;
+
+      case 'Diagramacion':
+        handleDiagramacion(sheet, targetRow, data);
+        break;
+
+      case 'Produccion':
+        // (Opcional) Validar que Diagramación esté completa
+        handleProduccion(ss, sheet, targetRow, data);
+        break;
+
+      default:
+        return ContentService
+          .createTextOutput('Error: Sección no reconocida.')
+          .setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    SpreadsheetApp.flush();
+    return ContentService
+      .createTextOutput('Proforma ' + numeroProforma + ' actualizada correctamente.')
+      .setMimeType(ContentService.MimeType.TEXT);
+
+  } catch (error) {
+    Logger.log('Error en doPost: ' + error.message);
+    return ContentService
+      .createTextOutput('Error: ' + error.message)
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+// -----------------------------------------------------
+//  Función para buscar fila según Proforma
+// -----------------------------------------------------
+function findRowByProforma(sheet, numeroProforma) {
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] == numeroProforma) {
+      return i + 1; // la fila real
+    }
+  }
+  return null;
+}
+
+// -----------------------------------------------------
+//  Generar número de proforma automáticamente
+// -----------------------------------------------------
+function getLastProformaNumber(sheet) {
+  var lastRow = sheet.getLastRow();
+  var lastProforma = 0;
+
+  for (var i = lastRow; i >= 2; i--) {
+    var value = sheet.getRange(i, 1).getValue(); // Col A
+    if (value && !isNaN(parseInt(value))) {
+      lastProforma = parseInt(value);
+      break;
+    }
+  }
+  return lastProforma;
+}
+
+// -----------------------------------------------------
+//  Encuentra la primera fila vacía disponible
+// -----------------------------------------------------
+function getNextAvailableRow(sheet) {
+  var lastRow = sheet.getLastRow();
+  // revisamos desde la 2 hasta lastRow si hay fila en blanco
+  for (var i = 2; i <= lastRow; i++) {
+    var rowValues = sheet.getRange(i, 1, 1, 15).getValues()[0];
+    var allEmpty = rowValues.every(function(value){
+      return value.toString().trim() === "";
+    });
+    if (allEmpty) {
+      return i;
+    }
+  }
+  return lastRow + 1;
+}
+
+// -----------------------------------------------------
+//  Validar si Comercial está completa en la fila
+// -----------------------------------------------------
+function isComercialComplete(sheet, row) {
+  var rowValues = sheet.getRange(row, 1, 1, 7).getValues()[0];
+  // revisa col A..G => proforma, ejecutivo, etc.
+  return rowValues.every(function(val){ return val !== "" });
+}
+
+// -----------------------------------------------------
+//  Validar si Diagramación está completa en la fila
+// -----------------------------------------------------
+function isDiagramacionComplete(sheet, row) {
+  var rowValues = sheet.getRange(row, 8, 1, 7).getValues()[0];
+  // revisa col H..N
+  return rowValues.every(function(val){ return val !== "" });
+}
+
+// -----------------------------------------------------
+//  Guardar datos en la sección Comercial (A..G)
+// -----------------------------------------------------
+function handleComercial(sheet, row, proforma, data) {
+  var values = [
+    proforma,
+    data.ejecutivoComercial || "",
+    data.cliente || "",
+    data.clasificacion || "",
+    data.descripcion || "",
+    data.cantidadPedido || "",
+    data.fechaEntrega || ""
+  ];
+  sheet.getRange(row, 1, 1, values.length).setValues([values]);
+}
+
+// -----------------------------------------------------
+//  Guardar datos en la sección Diagramación (H..N)
+// -----------------------------------------------------
+function handleDiagramacion(sheet, row, data) {
+  var values = [
+    data.fechaRecepcionArtes || "",
+    data.diseñador || "",
+    data.fechaRealizacionPrePrensa || "",
+    data.fechaEnvioArtesAprobacion || "",
+    data.fechaAprobacionArtes || "",
+    data.fechaEnvioCTP || "",
+    data.fechaQuemadoPlacas || ""
+  ];
+  sheet.getRange(row, 8, 1, values.length).setValues([values]);
+}
+
+// -----------------------------------------------------
+//  Guardar datos en Producción (O..AQ) y
+//  adicionalmente anotar en las hojas de procesos
+// -----------------------------------------------------
+function handleProduccion(ss, sheet, row, data) {
+  var values = [
+    data.numeroOT || "",
+    data.fechaAperturaOT || "",
+    data.fechaEntrega || "",
+    data.cartulinaPapel || "",
+    data.cantidadHojas || "",
+    data.tirajeImpresion || "",
+    data.xlUV || "",
+    data.xl75 || "",
+    data.barnizado || "",
+    data.hotstamping || "",
+    data.plastificado || "",
+    data.localizado || "",
+    data.selloSeco || "",
+    data.easyMatrix || "",
+    data.cilindrica || "",
+    data.tipografica || "",
+    data.peg1Punto || "",
+    data.peg3Puntos || "",
+    data.perforado || "",
+    data.doblado || "",
+    data.compaginado || "",
+    data.engrapado || "",
+    data.emblocado || "",
+    data.engarrado || "",
+    data.pegadoConTesa || "",
+    data.tinta || "",
+    data.placas || "",
+    data.tipoImpresion || "",
+    data.numeroPasadas || ""
+  ];
+  sheet.getRange(row, 15, 1, values.length).setValues([values]);
+
+  // ---------- Anotar en Hojas de Procesos si está "X" -----------
+  var processSheets = {
+    'xlUV': 'XL-UV',
+    'xl75': 'XL75',
+    'barnizado': 'Barnizado',
+    'hotstamping': 'HOT STAMPING',
+    'plastificado': 'Plastificado',
+    'localizado': 'Localizado',
+    'selloSeco': 'Sello Seco',
+    'easyMatrix': 'EASY MATRIX',
+    'cilindrica': 'CILINDRICA',
+    'tipografica': 'TIPOGRAFICA',
+    'peg1Punto': 'Peg. 1 Punto',
+    'peg3Puntos': 'Peg. 3 Puntos',
+    'perforado': 'Perforado',
+    'doblado': 'Doblado',
+    'compaginado': 'Compaginado',
+    'engrapado': 'Engrapado',
+    'emblocado': 'Emblocado',
+    'engarrado': 'Engarrado',
+    'pegadoConTesa': 'Pegado con Tesa'
+  };
+
+  // data.numeroOT es el valor que iremos anotando
+  var otValue = data.numeroOT || "";
+  for (var prop in processSheets) {
+    if (data[prop] === "X") {
+      var sheetName = processSheets[prop];
+      var s = ss.getSheetByName(sheetName);
+      if (s) {
+        var lastRowProcess = s.getLastRow() + 1;
+        s.getRange(lastRowProcess, 1).setValue(otValue);
+      }
+    }
+  }
+}
