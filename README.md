@@ -10,6 +10,26 @@
 
 ---
 
+## Visual Overview
+
+<p align="center">
+  <img src="assets/figures/erp_main_dashboard.webp" width="720" alt="ERP for the Graphic Industry main dashboard">
+</p>
+
+<p align="center">
+  <strong>Central operational dashboard</strong><br>
+  <sub>Direct access to Commercial, Task Scheduling, Production Planning, Diagramming, Production, and API Configuration.</sub>
+</p>
+
+| Diagramming and Prepress | Weekly Production Plan |
+|:---:|:---:|
+| <a href="assets/figures/erp_diagramming_module.webp"><img src="assets/figures/erp_diagramming_module.webp" width="480" alt="ERP diagramming and prepress module"></a> | <a href="assets/figures/erp_weekly_production_plan.webp"><img src="assets/figures/erp_weekly_production_plan.webp" width="420" alt="ERP weekly production plan"></a> |
+| Approved-proforma selection, customer information, artwork reception, designer assignment, prepress milestones, CTP delivery, and plate preparation. | Monday-to-Friday production matrix organized by graphic process, with week navigation and PDF export. |
+
+<p align="center"><sub>Click either screenshot to open the complete image.</sub></p>
+
+---
+
 ## Executive Overview
 
 **ERP for the Graphic Industry** is a specialized desktop application developed to coordinate the operational workflow of a printing and graphic-production company. The system connects the commercial, prepress, and production stages through a shared information flow, reducing fragmented records and improving the traceability of each approved quotation and production order.
@@ -60,13 +80,11 @@ Task Scheduling by Process and Date
 Weekly Production Plan and PDF Reporting
 ```
 
-Each stage contributes information to the same operational record, allowing the organization to follow a job from customer approval to production scheduling.
+Each department contributes information to the same operational record, allowing the organization to follow a job from customer approval to production scheduling.
 
 ---
 
 ## System Architecture
-
-The project follows a lightweight distributed architecture:
 
 ```text
 ┌──────────────────────────────────────────────┐
@@ -108,23 +126,11 @@ The project follows a lightweight distributed architecture:
 
 The commercial interface supports the creation and editing of approved proformas. Multiple orders can be entered in one session, and proforma numbering is generated from the shared operational dataset.
 
-Principal data includes:
-
-- Commercial executive.
-- Customer.
-- Customer classification.
-- Product or service description.
-- Requested quantity.
-- Delivery date.
-- Approved proforma number.
-
-The interface communicates with the Apps Script service to retrieve existing proformas and maintain synchronized records.
+Principal data includes the commercial executive, customer, customer classification, product description, requested quantity, delivery date, and approved-proforma number.
 
 ### Diagramming and Prepress
 
-The diagramming module documents the transition from the commercial request to production-ready artwork.
-
-Tracked milestones include:
+The diagramming module documents the transition from the commercial request to production-ready artwork. It tracks:
 
 - Artwork reception date.
 - Assigned designer.
@@ -134,43 +140,21 @@ Tracked milestones include:
 - CTP submission.
 - Plate-burning completion.
 
-This stage improves visibility over design dependencies that must be completed before a job can progress to manufacturing.
+The screenshot in the visual overview shows a real operational record inside this module.
 
 ### Production Management
 
-The production module records the technical definition of the work order, including:
-
-- Work-order number.
-- Opening and delivery dates.
-- Paper or cardstock specification.
-- Sheet quantity.
-- Print run.
-- Printing-machine requirements.
-- Ink, plates, printing type, and number of passes.
-- Required post-print and finishing processes.
+The production module records the technical definition of the work order, including materials, sheet quantities, print run, printing-machine requirements, ink, plates, printing type, number of passes, and post-print processes.
 
 When a process is selected, the corresponding OT is also registered in its process-specific worksheet, creating a structured production queue.
 
 ### Task Scheduling
 
-The scheduling interface loads available OTs by production process and allows them to be assigned to calendar dates.
-
-The module includes:
-
-- Process selection.
-- Available and assigned OT lists.
-- Drag-and-drop task assignment.
-- Calendar-based scheduling.
-- Removal or reassignment of scheduled work.
-- Background data loading to preserve interface responsiveness.
-
-This separation between process demand and scheduled execution provides a practical operational-planning layer.
+The scheduling interface loads available OTs by production process and allows them to be assigned to calendar dates. It includes process selection, available and assigned OT lists, drag-and-drop assignment, calendar scheduling, reassignment, and background data loading.
 
 ### Weekly Production Plan
 
-The production-planning module consolidates assigned work into a weekly matrix organized by process and working day.
-
-Capabilities include:
+The production-planning module consolidates assigned work into a weekly matrix organized by process and working day. It provides:
 
 - Previous- and next-week navigation.
 - Monday-to-Friday production overview.
@@ -178,39 +162,27 @@ Capabilities include:
 - Automatic organization of scheduled OTs.
 - Export of the weekly plan to an A4 PDF document.
 
-The resulting report can be distributed to production teams or used during operational-planning meetings.
-
 ### API Configuration
 
-The desktop client includes a configurable Apps Script endpoint. The selected URL is persisted through `QSettings`, allowing deployments to update the service address without modifying the application source code.
+The desktop client includes a configurable Apps Script endpoint. The selected URL is persisted through `QSettings`, allowing deployments to update the service address without changing the source code.
 
 ### Modbus TCP Service
 
-A Modbus TCP server is launched in a background thread when the application starts. The implementation exposes discrete inputs, coils, holding registers, and input registers through a single server context.
-
-This component establishes a technical foundation for future integration with:
-
-- Production machines.
-- PLCs or embedded controllers.
-- Monitoring dashboards.
-- Shop-floor indicators.
-- Industrial data-acquisition systems.
+A Modbus TCP server is launched in a background thread when the application starts. The current implementation exposes discrete inputs, coils, holding registers, and input registers as a foundation for future machine, PLC, dashboard, or shop-floor integration.
 
 ---
 
 ## Graphic-Production Processes
 
-The current workflow recognizes multiple printing and finishing operations, including:
-
 | Category | Supported Processes |
 | --- | --- |
-| Printing | XL75, XL-UV, typographic and cylindrical operations. |
+| Printing | XL75, XL-UV, typographic, and cylindrical operations. |
 | Surface finishing | Varnishing, plastic lamination, localized finishing, and dry embossing. |
 | Decorative finishing | Hot stamping. |
 | Cutting and forming | Easy Matrix, perforation, and folding. |
 | Assembly | Collating, stapling, padding, spiral binding, one-point gluing, three-point gluing, and Tesa-tape bonding. |
 
-Each selected process receives the relevant OT, allowing workload to be organized independently while remaining linked to the primary production record.
+Each selected process receives the relevant OT while remaining linked to the primary production record.
 
 ---
 
@@ -237,6 +209,11 @@ Each selected process receives the relevant OT, allowing workload to be organize
 ```text
 ERP-for-graphic-industry/
 ├── README.md
+├── assets/
+│   └── figures/
+│       ├── erp_main_dashboard.webp
+│       ├── erp_diagramming_module.webp
+│       └── erp_weekly_production_plan.webp
 ├── HERMENCA ERPP/
 │   ├── main.py
 │   ├── comercial.py
@@ -255,31 +232,25 @@ ERP-for-graphic-industry/
 
 | File | Responsibility |
 | --- | --- |
-| `main.py` | Application startup, dashboard, module navigation, API configuration, and Modbus-thread initialization. |
+| `main.py` | Startup, dashboard, module navigation, API configuration, and Modbus-thread initialization. |
 | `comercial.py` | Creation and editing of commercial records and approved proformas. |
-| `diagramacion.py` | Diagramming, artwork, approval, CTP, and plate-preparation milestones. |
-| `produccion.py` | Work-order definition, material data, print requirements, and finishing-process selection. |
-| `taskprogram.py` | Process-based OT scheduling through lists, calendar interaction, and drag-and-drop operations. |
+| `diagramacion.py` | Artwork, approval, CTP, and plate-preparation milestones. |
+| `produccion.py` | Work-order definition, material data, print requirements, and process selection. |
+| `taskprogram.py` | OT scheduling through process lists, calendar interaction, and drag-and-drop operations. |
 | `produccionplan.py` | Weekly production matrix and PDF export. |
 | `server.py` | Asynchronous Modbus TCP server. |
-| `Google Apps Scripts/Get.gs` | Read operations, OT loading, assignment, removal, validation, and proforma retrieval. |
+| `Google Apps Scripts/Get.gs` | Read operations, OT loading, assignment, validation, and proforma retrieval. |
 | `Google Apps Scripts/Postman` | Write operations for commercial, diagramming, and production data. |
 
 ---
 
 ## Installation
 
-The project was developed as a Python desktop application. A compatible environment should include Python 3.9 or a validated equivalent.
-
-Install the principal dependencies:
+A compatible environment should include Python 3.9 or a validated equivalent.
 
 ```bash
 pip install PyQt5 requests pymodbus reportlab
-```
 
-Run the application from the project directory:
-
-```bash
 cd "HERMENCA ERPP"
 python main.py
 ```
@@ -290,7 +261,7 @@ Before operational use, configure the deployed Google Apps Script endpoint from 
 
 ## Deployment Considerations
 
-A production deployment should externalize environment-specific information and validate the following:
+A production deployment should validate:
 
 - Google Apps Script deployment permissions.
 - Spreadsheet access and worksheet naming.
@@ -305,35 +276,11 @@ Service URLs, spreadsheet identifiers, and deployment credentials should not be 
 
 ---
 
-## Engineering Value
-
-The project demonstrates the integration of business-process software with production-planning and industrial-connectivity concepts. Its principal engineering strengths are:
-
-- Domain-specific modeling of the graphic-production workflow.
-- Traceability from approved quotation to scheduled manufacturing.
-- Modular desktop interfaces for independent departments.
-- Shared operational records through a lightweight cloud backend.
-- Process-level OT distribution.
-- Weekly planning and printable reporting.
-- Extensibility toward industrial equipment through Modbus TCP.
-
----
-
 ## Development Status
 
 The repository represents a functional prototype and active engineering implementation. The current system establishes the core commercial, diagramming, production, scheduling, reporting, and communication workflows.
 
-Further development may include:
-
-- Authentication and role-based permissions.
-- Migration from spreadsheet storage to a transactional database.
-- Audit logs and record-version history.
-- Inventory and raw-material management.
-- Production-capacity calculations.
-- Machine-status acquisition through Modbus.
-- Automated delivery-risk alerts.
-- Centralized deployment and update management.
-- Expanded validation, testing, and error recovery.
+Future development may include authentication, role-based permissions, a transactional database, audit logs, inventory management, production-capacity calculations, machine-status acquisition through Modbus, automated delivery-risk alerts, centralized updates, and expanded validation.
 
 ---
 
